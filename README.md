@@ -92,11 +92,11 @@ tcp自定义协议获取完整报文| [源代码](https://github.com/e421083458/
 
 `git clone git@github.com:e421083458/gateway_demo.git`
 
-- 确保本地环境安装了Go 1.12+版本
+- 确保本地环境安装了Go 1.24+版本
 
 ```
 go version
-go version go1.12.15 darwin/amd64
+go version go1.24.0 linux/amd64
 ```
 
 - 下载类库依赖
@@ -117,11 +117,11 @@ go mod tidy
 `git clone git@github.com:e421083458/go_gateway.git`
 
 
-- 确保本地环境安装了Go 1.12+版本
+- 确保本地环境安装了Go 1.24+版本
 
 ```
 go version
-go version go1.12.15 darwin/amd64
+go version go1.24.0 linux/amd64
 ```
 
 - 下载类库依赖
