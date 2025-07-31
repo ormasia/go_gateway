@@ -1,34 +1,99 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-gateteway-dashboard
+  name: go-gateway-dashboard
+  labels:
+    app: go-gateway
+    component: dashboard
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: go-gateteway-dashboard
+      app: go-gateway
+      component: dashboard
   template:
     metadata:
       labels:
-        name: go-gateteway-dashboard
+        app: go-gateway
+        component: dashboard
     spec:
       containers:
-        - name: go-gateteway-dashboard
-          image: go-gateteway-dashboard
-          imagePullPolicy: Never
+        - name: dashboard
+          image: go-gateway-dashboard:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8880
+              name: http
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8880
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8880
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-gateteway-dashboard
+  name: go-gateway-dashboard
+  labels:
+    app: go-gateway
+    component: dashboard
 spec:
+  type: ClusterIP
   ports:
     - port: 8880
-      name: "dashboard"
+      name: http
       targetPort: 8880
       protocol: TCP
+  selector:
+    app: go-gateway
+    component: dashboard
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: go-gateway-dashboard
+  labels:
+    app: go-gateway
+    component: dashboard
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: gateway-dashboard.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: go-gateway-dashboard
+                port:
+                  number: 8880
       nodePort: 30088
   type: NodePort
   selector:

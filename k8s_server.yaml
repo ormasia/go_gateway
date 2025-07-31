@@ -1,41 +1,145 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-gateteway-server
+  name: go-gateway-server
+  labels:
+    app: go-gateway
+    component: server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      name: go-gateteway-server
+      app: go-gateway
+      component: server
   template:
     metadata:
       labels:
-        name: go-gateteway-server
+        app: go-gateway
+        component: server
     spec:
       containers:
-        - name: go-gateteway-server
-          image: go-gateteway-server:latest
-          imagePullPolicy: Never
+        - name: server
+          image: go-gateway-server:latest
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
-            - containerPort: 4433
+            - containerPort: 8081
+              name: http
+            - containerPort: 8082
+              name: https
+            - containerPort: 8083
+              name: tcp
+            - containerPort: 8084
+              name: grpc
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            - name: cert-files
+              mountPath: /app/cert_file
+              readOnly: true
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: cert-files
+          secret:
+            secretName: go-gateway-certs
+            optional: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-gateteway-server
+  name: go-gateway-server-http
+  labels:
+    app: go-gateway
+    component: server
+    protocol: http
 spec:
-  ports:
-    - port: 8080
-      name: "http"
-      targetPort: 8080
-      protocol: TCP
-      nodePort: 30080
-    - port: 4433
-      name: "https"
-      targetPort: 4433
-      protocol: TCP
-      nodePort: 30443
   type: NodePort
+  ports:
+    - port: 8081
+      name: http
+      targetPort: 8081
+      protocol: TCP
+      nodePort: 30081
   selector:
-    name: go-gateteway-server
+    app: go-gateway
+    component: server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-gateway-server-https
+  labels:
+    app: go-gateway
+    component: server
+    protocol: https
+spec:
+  type: NodePort
+  ports:
+    - port: 8082
+      name: https
+      targetPort: 8082
+      protocol: TCP
+      nodePort: 30082
+  selector:
+    app: go-gateway
+    component: server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-gateway-server-tcp
+  labels:
+    app: go-gateway
+    component: server
+    protocol: tcp
+spec:
+  type: NodePort
+  ports:
+    - port: 8083
+      name: tcp
+      targetPort: 8083
+      protocol: TCP
+      nodePort: 30083
+  selector:
+    app: go-gateway
+    component: server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-gateway-server-grpc
+  labels:
+    app: go-gateway
+    component: server
+    protocol: grpc
+spec:
+  type: NodePort
+  ports:
+    - port: 8084
+      name: grpc
+      targetPort: 8084
+      protocol: TCP
+      nodePort: 30084
+  selector:
+    app: go-gateway
+    component: server

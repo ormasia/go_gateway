@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: go-gateway-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: go_gateway
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./go_gateway.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - go-gateway-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: go-gateway-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+      retries: 5
+    networks:
+      - go-gateway-network
+
+  # Go Gateway Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: dockerfile-dashboard
+    container_name: go-gateway-dashboard
+    restart: unless-stopped
+    ports:
+      - "8880:8880"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./logs:/app/logs
+      - ./conf/dev:/app/conf/dev
+    networks:
+      - go-gateway-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8880/ping"]
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  # Go Gateway Server
+  server:
+    build:
+      context: .
+      dockerfile: dockerfile-server
+    container_name: go-gateway-server
+    restart: unless-stopped
+    ports:
+      - "8081:8081"  # HTTP Proxy
+      - "8082:8082"  # HTTPS Proxy
+      - "8083:8083"  # TCP Proxy
+      - "8084:8084"  # GRPC Proxy
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./logs:/app/logs
+      - ./cert_file:/app/cert_file
+      - ./conf/dev:/app/conf/dev
+    networks:
+      - go-gateway-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8081"]
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  # Nginx - 可选的前端代理
+  nginx:
+    image: nginx:alpine
+    container_name: go-gateway-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./cert_file:/etc/nginx/certs:ro
+    depends_on:
+      - dashboard
+      - server
+    networks:
+      - go-gateway-network
+    profiles:
+      - nginx
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  go-gateway-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
