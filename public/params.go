@@ -9,29 +9,32 @@ import (
 )
 
 func DefaultGetValidParams(c *gin.Context, params interface{}) error {
-	if err := c.ShouldBind(params); err != nil {
-		return err
-	}
-	//获取验证器
-	valid, err := GetValidator(c)
-	if err != nil {
-		return err
-	}
-	//获取翻译器
-	trans, err := GetTranslation(c)
-	if err != nil {
-		return err
-	}
-	err = valid.Struct(params)
-	if err != nil {
-		errs := err.(validator.ValidationErrors)
-		sliceErrs := []string{}
-		for _, e := range errs {
-			sliceErrs = append(sliceErrs, e.Translate(trans))
-		}
-		return errors.New(strings.Join(sliceErrs, ","))
-	}
-	return nil
+    // 1. 绑定参数
+    if err := c.ShouldBind(params); err != nil {
+        return err
+    }
+    // 2. 从上下文获取验证器
+    valid, err := GetValidator(c)
+    if err != nil {
+        return err
+    }
+    // 3. 从上下文获取翻译器
+    trans, err := GetTranslation(c)
+    if err != nil {
+        return err
+    }
+    // 4. 执行验证
+    err = valid.Struct(params)
+    if err != nil {
+        // 5. 处理验证错误，翻译错误信息
+        errs := err.(validator.ValidationErrors)
+        sliceErrs := []string{}
+        for _, e := range errs {
+            sliceErrs = append(sliceErrs, e.Translate(trans))
+        }
+        return errors.New(strings.Join(sliceErrs, ","))
+    }
+    return nil
 }
 
 func GetValidator(c *gin.Context) (*validator.Validate, error) {

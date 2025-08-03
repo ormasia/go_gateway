@@ -2,20 +2,21 @@ package middleware
 
 import (
 	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
+
 	"github.com/e421083458/go_gateway/public"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
-	"github.com/go-playground/universal-translator"
+	ut "github.com/go-playground/universal-translator"
 	"gopkg.in/go-playground/validator.v9"
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	zh_translations "gopkg.in/go-playground/validator.v9/translations/zh"
-	"reflect"
-	"regexp"
-	"strings"
 )
 
-//设置Translation
+// 设置Translation
 func TranslationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		//参照：https://github.com/go-playground/validator/blob/v9/_examples/translations/main.go
@@ -39,7 +40,6 @@ func TranslationMiddleware() gin.HandlerFunc {
 			val.RegisterTagNameFunc(func(fld reflect.StructField) string {
 				return fld.Tag.Get("en_comment")
 			})
-			break
 		default:
 			zh_translations.RegisterDefaultTranslations(val, trans)
 			val.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -161,10 +161,9 @@ func TranslationMiddleware() gin.HandlerFunc {
 				t, _ := ut.T("valid_weightlist", fe.Field())
 				return t
 			})
-			break
 		}
-		c.Set(public.TranslatorKey, trans)
-		c.Set(public.ValidatorKey, val)
+		c.Set(public.TranslatorKey, trans) // 将翻译器存储到上下文
+		c.Set(public.ValidatorKey, val)    // 将验证器存储到上下文
 		c.Next()
 	}
 }

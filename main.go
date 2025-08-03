@@ -2,15 +2,16 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/e421083458/go_gateway/dao"
 	"github.com/e421083458/go_gateway/golang_common/lib"
 	"github.com/e421083458/go_gateway/grpc_proxy_router"
 	"github.com/e421083458/go_gateway/http_proxy_router"
 	"github.com/e421083458/go_gateway/router"
 	"github.com/e421083458/go_gateway/tcp_proxy_router"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 //endpoint dashboard后台管理  server代理服务器
@@ -37,7 +38,7 @@ func main() {
 		defer lib.Destroy()
 		router.HttpServerRun()
 
-		quit := make(chan os.Signal)
+		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 
@@ -61,7 +62,7 @@ func main() {
 			grpc_proxy_router.GrpcServerRun()
 		}()
 
-		quit := make(chan os.Signal)
+		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 

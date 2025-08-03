@@ -1,14 +1,15 @@
 package dao
 
 import (
-	"github.com/e421083458/go_gateway/dto"
-	"github.com/e421083458/go_gateway/public"
-	"github.com/e421083458/go_gateway/golang_common/lib"
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	"net/http/httptest"
 	"strings"
 	"sync"
+
+	"github.com/e421083458/go_gateway/dto"
+	"github.com/e421083458/go_gateway/golang_common/lib"
+	"github.com/e421083458/go_gateway/public"
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 type ServiceDetail struct {
@@ -94,13 +95,13 @@ func (s *ServiceManager) HTTPAccessMode(c *gin.Context) (*ServiceDetail, error) 
 func (s *ServiceManager) LoadOnce() error {
 	s.init.Do(func() {
 		serviceInfo := &ServiceInfo{}
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c, _ := gin.CreateTestContext(httptest.NewRecorder()) // 为了在没有http请求的情况下，也能使用dao层的方法 构造了一个虚拟的gin.context
 		tx, err := lib.GetGormPool("default")
 		if err != nil {
 			s.err = err
 			return
 		}
-		params := &dto.ServiceListInput{PageNo: 1, PageSize: 99999}
+		params := &dto.ServiceListInput{PageNo: 1, PageSize: 99999} //分页查询(1，99999)，查询所有服务
 		list, _, err := serviceInfo.PageList(c, tx, params)
 		if err != nil {
 			s.err = err

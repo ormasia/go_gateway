@@ -25,18 +25,19 @@ func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	}
 
 	router.Use(
-		http_proxy_middleware.HTTPAccessModeMiddleware(),
-		http_proxy_middleware.HTTPFlowCountMiddleware(),
-		http_proxy_middleware.HTTPFlowLimitMiddleware(),
-		http_proxy_middleware.HTTPJwtAuthTokenMiddleware(),
-		http_proxy_middleware.HTTPJwtFlowCountMiddleware(),
-		http_proxy_middleware.HTTPJwtFlowLimitMiddleware(),
-		http_proxy_middleware.HTTPWhiteListMiddleware(),
-		http_proxy_middleware.HTTPBlackListMiddleware(),
-		http_proxy_middleware.HTTPHeaderTransferMiddleware(),
-		http_proxy_middleware.HTTPStripUriMiddleware(),
-		http_proxy_middleware.HTTPUrlRewriteMiddleware(),
-		http_proxy_middleware.HTTPReverseProxyMiddleware())
+		http_proxy_middleware.HTTPAccessModeMiddleware(),     // 服务匹配
+		http_proxy_middleware.HTTPFlowCountMiddleware(),      // 流量统计
+		http_proxy_middleware.HTTPFlowLimitMiddleware(),      // 流量限制
+		http_proxy_middleware.HTTPJwtAuthTokenMiddleware(),   // JWT认证
+		http_proxy_middleware.HTTPJwtFlowCountMiddleware(),   // JWT流量统计
+		http_proxy_middleware.HTTPJwtFlowLimitMiddleware(),   // JWT流量限制
+		http_proxy_middleware.HTTPWhiteListMiddleware(),      // 白名单
+		http_proxy_middleware.HTTPBlackListMiddleware(),      // 黑名单
+		http_proxy_middleware.HTTPHeaderTransferMiddleware(), // Header转换
+		http_proxy_middleware.HTTPStripUriMiddleware(),       // URI剥离
+		http_proxy_middleware.HTTPUrlRewriteMiddleware(),     // URL重写
+		http_proxy_middleware.HTTPReverseProxyMiddleware(),   // 反向代理
+	)
 
 	return router
 }
